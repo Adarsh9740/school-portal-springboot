@@ -1,20 +1,27 @@
 package com.eazybytes.eazyschool.controller;
 
+import com.eazybytes.eazyschool.constants.EazySchoolConstants;
 import com.eazybytes.eazyschool.model.Contact;
+import com.eazybytes.eazyschool.repository.ContactRepository;
 import com.eazybytes.eazyschool.service.ContactService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.annotation.RequestScope;
 import org.springframework.web.context.annotation.SessionScope;
 import org.springframework.web.servlet.ModelAndView;
 
 import jakarta.validation.Valid;
+
+import java.util.List;
+import java.util.Optional;
 
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -23,6 +30,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 public class ContactController {
 
     private final ContactService contactService;
+    @Autowired
+    private ContactRepository contactRepository;
 
     @Autowired
     public ContactController(ContactService contactService) {
@@ -57,7 +66,18 @@ public class ContactController {
         log.info("Number of times the Contact form is submitted : "+contactService.getCounter());
         return "redirect:/contact";
     }
-
-
-
+    @RequestMapping(value = "/displayMessages", method = RequestMethod.GET)
+    public String getAllContacts(Model model){
+//        List<Contact> list= contactRepository.findMsgsWithStatus(EazySchoolConstants.OPEN);
+        List<Contact> list=contactRepository.findByStatus(EazySchoolConstants.OPEN);
+        model.addAttribute("contactMsgs",list);
+        return "messages";
+    }
+    @RequestMapping(value = "/closeMsg", method = RequestMethod.GET)
+    public String CloseTheMessage(@RequestParam(name = "id") int id, Authentication authentication){
+       Optional<Contact> contact=contactRepository.findById(id);
+       contact.ifPresent(contact1 -> contact1.setStatus(EazySchoolConstants.CLOSE));
+        contact.ifPresent(value -> contactRepository.save(value));
+        return "redirect:/displayMessages";
+    }
 }
